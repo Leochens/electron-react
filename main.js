@@ -1,6 +1,4 @@
-const {app,BrowserWindow} = require('electron')
-const path = require('path')
-const url = require('url')
+const {app,BrowserWindow, ipcMain} = require('electron')
 
 let mainWindow
 
@@ -24,4 +22,13 @@ app.on('activate',function(){
     if(mainWindow === null){
         createWindow()
     }
+})
+ipcMain.on("openRender",(event,avg)=>{
+    let renderWindow = null
+    const { width,height } = avg
+    renderWindow = new BrowserWindow({width,height,webPreferences:{
+        nodeIntegration: true,
+        contextIsolation: false
+    }}) 
+    renderWindow.webContents.loadURL("http://localhost:3000")
 })

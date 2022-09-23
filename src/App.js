@@ -1,4 +1,3 @@
-import './App.css';
 // import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 // import routes from './route';
 // import {ipcRenderer} from 'electron'
@@ -33,7 +32,7 @@ function App() {
 
         { config
         ? <>
-          <Button className='submit-btn'>更新代理</Button>
+          <Button type='primary' className='submit-btn'>更新代理</Button>
         </>
         :<div>
           <h3 style={{textAlign:'left'}}>你的电脑ip:</h3>
@@ -47,7 +46,7 @@ function App() {
 
       </Row>
       <Row align='center'>
-          <Button type='link'>高级设置</Button> 
+          <Button  type='link'>高级设置</Button> 
       </Row>
     </div>
   );

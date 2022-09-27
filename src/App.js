@@ -1,53 +1,138 @@
 // import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 // import routes from './route';
 // import {ipcRenderer} from 'electron'
-import { Button,Col,Input,Row,Space } from 'antd'
+import { Button, Col, Input, message, Row, Space } from 'antd'
+import axios from 'axios';
 import { useEffect, useState } from 'react';
-// import axios from 'axios'
+import ProxyUrlList from './components/proxy-url-list';
+// const REMOTE_HOST = 'http://10.96.89.102:8080'
+const REMOTE_HOST = 'http://127.0.0.1:8080'
 
 function App() {
 
-  const [ config,setConfig ] =  useState(null)
-  const [ip,setIp] = useState(sessionStorage.getItem('ip'))
-  const [port,setPort] = useState(8888)
+  const [config, setConfig] = useState(null)
+  const [id, setId] = useState('')
+  const [ip, setIp] = useState(sessionStorage.getItem('ip'))
+  const [port, setPort] = useState(8888)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [proxyList,setProxyList] = useState([])
+  const [pac, setPac] = useState(null)
 
 
-  useEffect(()=>{
-    const config = localStorage.getItem('config')
-    if(config){
-      setConfig(config)
+  useEffect(() => {
+    let _config = localStorage.getItem('config')
+
+    if (_config) {
+      _config = JSON.parse(_config)
+      setConfig(_config)
+      setPac(`${REMOTE_HOST}/pac?id=${_config.id}`)
     }
-  },[])
+  }, [])
 
-  // function setConfig(){
-  //   localStorage.setItem('config',JSON.stringify({ip: '172.25.156.141',port: 8080}))
-  // }
-  
+
+  const configProxy = () => {
+    if(!id || !ip || !port ) return message.error("请输入完整参数！")
+    axios.post(`${REMOTE_HOST}/set`,{
+      id: id,
+      ip,
+      port,
+      urls: proxyList,
+    },{
+      headers:{
+        "content-type":'application/json'
+      }
+    }).then(r => {
+      if (r.status === 200) {
+        if (r.data.err) {
+          message.error(r.data.err)
+        } else {
+          message.success('代理配置上传成功，请按照提示操作！')
+          const config = { id, ip, port };
+          localStorage.setItem('config', JSON.stringify(config))
+          setPac(r.data.data)
+          setConfig(config)
+        }
+      } else {
+        message.error(r.statusText)
+      }
+    }).catch(e => {
+      message.error(e)
+    })
+  }
+
+  const updateProxy = () => {
+    if (!config || !config.id) {
+      return message.error("config不存在！")
+    }
+    console.log('proxyList',proxyList)
+    axios.post(`${REMOTE_HOST}/set`,{
+      id: config.id,
+      urls: proxyList,
+    },{
+      headers:{
+        "content-type":'application/json'
+      }
+    }).then(r => {
+      console.log(r)
+      if (r.status === 200) {
+        if (r.data.err) {
+          message.error(r.data.err)
+        } else {
+          message.success('更新成功，请在手机上重启wifi！')
+          const config = { id, ip: r.data.ip, port: r.data.port };
+          localStorage.setItem('config', JSON.stringify(config))
+          setPac(r.data.data)
+          setConfig(config)
+        }
+      } else {
+        message.error(r.statusText)
+      }
+    }).catch(e => {
+      message.error(e)
+    })
+  }
+
   return (
-    <div>
+    <div className='main-wrap'>
       <Row className='title' align='center'>
         滴滴代理助手
       </Row>
       <Row className='main' align='center'>
 
-        { config
-        ? <>
-          <Button type='primary' className='submit-btn'>更新代理</Button>
-        </>
-        :<div>
-          <h3 style={{textAlign:'left'}}>你的电脑ip:</h3>
-          <Input value={ip} onInput={(e)=>setIp(e.target.value)} className='input' placeholder='请输入您的ip' />
-          <h3 style={{textAlign:'left'}}>你的代理端口port:</h3>
-          <Input value={port} onInput={(e)=>setPort(e.target.value)} className='input' placeholder='请输入您的代理端口port' />
-          
-          <Button className='submit-btn'>设置代理</Button>
+        {config
+          ? <>
+            <Button onClick={updateProxy} type='primary' shape='round' className='submit-btn' style={{ height: 40, width: 130 }}>一键更新代理</Button>
 
-        </div>}
+          </>
+          : <div>
+            <h4 style={{ textAlign: 'left', color: "#666" }}>你的唯一标识id:</h4>
+            <Input value={id} onInput={(e) => setId(e.target.value)} className='input' placeholder='请输入您的id' />
+            <h4 style={{ textAlign: 'left', color: "#666" }}>你的ip(默认本机ip):</h4>
+            <Input value={ip} onInput={(e) => setIp(e.target.value)} className='input' placeholder='请输入您的ip' />
+            <h4 style={{ textAlign: 'left', color: "#666" }}>你的代理端口port:</h4>
+            <Input value={port} onInput={(e) => setPort(e.target.value)} className='input' placeholder='请输入您的代理端口port' />
+
+            <Button onClick={configProxy} type='primary' shape='round' className='submit-btn'>设置代理</Button>
+          </div>}
 
       </Row>
-      <Row align='center'>
-          <Button  type='link'>高级设置</Button> 
-      </Row>
+      {config && <div style={{ textAlign: 'center' }}>
+        <Button onClick={() => {
+          setConfig(null)
+          localStorage.removeItem('config')
+        }} >重置代理</Button>
+      </div>}
+
+
+      <div style={{ textAlign: 'center' }}>
+
+        <Button onClick={() => setShowAdvanced(!showAdvanced)} type='link'>高级设置</Button>
+        {showAdvanced && <ProxyUrlList onChangeProxyList={setProxyList} />}
+      </div>
+      {pac && <div className='bottom-tip'>
+        <p className='pac-tip' style={{ color: '#999' }}>请复制以下url到手机端配置自动代理</p>
+        <p className='pac-tip'>{pac}</p>
+      </div>}
     </div>
   );
 }

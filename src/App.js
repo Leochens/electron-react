@@ -15,8 +15,10 @@ function App() {
   const [ip, setIp] = useState(sessionStorage.getItem('ip'))
   const [port, setPort] = useState(8888)
   const [showAdvanced, setShowAdvanced] = useState(false)
-  const [proxyList,setProxyList] = useState([])
+  const [proxyList, setProxyList] = useState([])
   const [pac, setPac] = useState(null)
+  const [loading,setLoading] = useState(false)
+
 
 
   useEffect(() => {
@@ -31,15 +33,16 @@ function App() {
 
 
   const configProxy = () => {
-    if(!id || !ip || !port ) return message.error("请输入完整参数！")
-    axios.post(`${REMOTE_HOST}/set`,{
+    if (!id || !ip || !port) return message.error("请输入完整参数！")
+    setLoading(true)
+    axios.post(`${REMOTE_HOST}/set`, {
       id: id,
       ip,
       port,
       urls: proxyList,
-    },{
-      headers:{
-        "content-type":'application/json'
+    }, {
+      headers: {
+        "content-type": 'application/json'
       }
     }).then(r => {
       if (r.status === 200) {
@@ -57,6 +60,9 @@ function App() {
       }
     }).catch(e => {
       message.error(e)
+    }).finally(()=>{
+      setLoading(false)
+
     })
   }
 
@@ -64,13 +70,14 @@ function App() {
     if (!config || !config.id) {
       return message.error("config不存在！")
     }
-    console.log('proxyList',proxyList)
-    axios.post(`${REMOTE_HOST}/set`,{
+
+    setLoading(true)
+    axios.post(`${REMOTE_HOST}/set`, {
       id: config.id,
       urls: proxyList,
-    },{
-      headers:{
-        "content-type":'application/json'
+    }, {
+      headers: {
+        "content-type": 'application/json'
       }
     }).then(r => {
       console.log(r)
@@ -89,6 +96,8 @@ function App() {
       }
     }).catch(e => {
       message.error(e)
+    }).finally(()=>{
+      setLoading(false)
     })
   }
 
@@ -99,9 +108,13 @@ function App() {
       </Row>
       <Row className='main' align='center'>
 
-        {config
+        {config && config.id
           ? <>
-            <Button onClick={updateProxy} type='primary' shape='round' className='submit-btn' style={{ height: 40, width: 130 }}>一键更新代理</Button>
+            <div className='cur-proxy'>
+              <div>当前代理id：{config.id}</div>
+              <div>当前代理地址：{config.ip}:{config.port}</div>
+            </div>
+            <Button loading={loading} onClick={updateProxy} type='primary' shape='round' className='submit-btn' style={{ height: 40, width: 130 }}>一键更新代理</Button>
 
           </>
           : <div>
@@ -112,7 +125,7 @@ function App() {
             <h4 style={{ textAlign: 'left', color: "#666" }}>你的代理端口port:</h4>
             <Input value={port} onInput={(e) => setPort(e.target.value)} className='input' placeholder='请输入您的代理端口port' />
 
-            <Button onClick={configProxy} type='primary' shape='round' className='submit-btn'>设置代理</Button>
+            <Button loading={loading} onClick={configProxy} type='primary' shape='round' className='submit-btn'>设置代理</Button>
           </div>}
 
       </Row>
@@ -126,7 +139,7 @@ function App() {
 
       <div style={{ textAlign: 'center' }}>
 
-        <Button onClick={() => setShowAdvanced(!showAdvanced)} type='link'>高级设置</Button>
+        <Button onClick={() => setShowAdvanced(!showAdvanced)} type='link'>代理白名单设置</Button>
         {showAdvanced && <ProxyUrlList onChangeProxyList={setProxyList} />}
       </div>
       {pac && <div className='bottom-tip'>

@@ -10,7 +10,7 @@ function createWindow() {
         nodeIntegration: true,
         contextIsolation: false
     }})
-    // mainWindow.loadFile('../')
+    // mainWindow.loadFile('./src/index.js')
     mainWindow.loadURL('http://localhost:3000/')
     mainWindow.on('closed',function(){
         mainWindow = null
